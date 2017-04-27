@@ -31,11 +31,14 @@ FusionEKF::FusionEKF() {
         0, 0.0009, 0,
         0, 0, 0.09;
 
-  /**
-  TODO:
-    * Finish initializing the FusionEKF.
-    * Set the process and measurement noises
-  */
+  // Measurement matrix laser
+  H_laser_ << 1, 0, 0, 0,
+              0, 1, 0, 0;
+
+  // Measurement matrix jacobian radar
+  Hj_ << 0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0;
 
 
 }
@@ -64,15 +67,26 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.x_ << 1, 1, 1, 1;
 
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-      /**
-      Convert radar from polar to cartesian coordinates and initialize state.
-      */
+      float range = measurement_pack.raw_measurements_[0];
+      float bearing = measurement_pack.raw_measurements_[1];
+      // Transform to Cartesian coordinates
+      float px = range * cos(bearing);
+      float py = range * sin(bearing);
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
-      /**
-      Initialize state.
-      */
+      float px = measurement_pack.raw_measurements_[0];
+      float py = measurement_pack.raw_measurements_[0];
     }
+
+    ekf_.x_ << px, py, 1, 1;
+
+    // Initialize state covariance matrix
+    ekf_.P_ << 1, 0, 0, 0,
+              0, 1, 0, 0,
+              0, 0, 1000, 0,
+              0, 0, 0, 1000;
+
+    previous_timestamp_ = measurement_pack.timestamp_;
 
     // done initializing, no need to predict or update
     is_initialized_ = true;
@@ -90,6 +104,34 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
      * Update the process noise covariance matrix.
      * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
    */
+
+  float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000;
+  previous_timestamp_ = measurement_pack.timestamp_;
+
+  ekf_.F_ = << 1, 0, dt, 0,
+              0, 1, 0, dt,
+              0, 0, 1, 0,
+              0, 0, 0, 1;
+
+  float noise_ax = 9;
+  float noise ay = 9;
+
+  ekf_.Q_(0, 0) = pow(t, 4) / 4 * noise_ax;
+  ekf_.Q_(0, 1) = 0;
+  ekf_.Q_(0, 2) = pow(t, 3) / 2 * noise_ax;
+  ekf_.Q_(0, 3) = 0;
+  ekf_.Q_(1, 0) = 0;
+  ekf_.Q_(1, 1) = pow(t, 4) / 4 * noise_ay;
+  ekf_.Q_(1, 2) = 0;
+  ekf_.Q_(1, 3) = pow(t, 3) / 2 * noise_ay;
+  ekf_.Q_(2, 0) = pow(t, 3) / 2 * noise_ax;
+  ekf_.Q_(2, 1) = 0;
+  ekf_.Q_(2, 2) = pow(t, 2) * noise_ax;
+  ekf_.Q_(2, 3) = 0;
+  ekf_.Q_(3, 0) = 0;
+  ekf_.Q_(3, 1) = pow(t, 3) / 2 * noise_ay;
+  ekf_.Q_(3, 2) = 0;
+  ekf_.Q_(3, 3) = pow(t, 2) * noise_ay;
 
   ekf_.Predict();
 
