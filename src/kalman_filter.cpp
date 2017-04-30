@@ -1,4 +1,6 @@
 #include "kalman_filter.h"
+#include <math.h>
+#include <iostream>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -19,7 +21,7 @@ void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
 
 void KalmanFilter::Predict() {
   x_ = F_ * x_;
-  P_ = F_ * P_ * F_.transpose() * Q_;
+  P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
@@ -36,17 +38,18 @@ void KalmanFilter::Update(const VectorXd &z) {
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  // Calculate Hj
-  VectorXd Hj = VectorXd(3);
-  float h1 = sqrt(pow(x_(0), 2) + pow(x_(1), 2));
-  if (fabs(h1) < 0.001) {
-    h1 = 0.001;
+  float range = sqrt(pow(x_(0), 2) + pow(x_(1), 2));
+  float bearing = atan2(x_(1), x_(0));
+  float radial_velocity;
+  if (fabs(range) < 0.0001) {
+    radial_velocity = 0.0;
+  } else {
+    radial_velocity = (x_(0) * x_(2) + x_(1) * x_(3)) / range;
   }
-  float h2 = atan2(x_(1) / x_(0));
-  float h3 = (x_(0) * x_(2) + x_(1) * x_(3)) / h1;
-  Hj << h1, h2, h3;
 
-  VectorXd y = z - Hj;
+  VectorXd z_pred(3);
+  z_pred << range, bearing, radial_velocity;
+  VectorXd y = z - z_pred;
   MatrixXd S = H_ * P_ * H_.transpose() + R_;
   MatrixXd K = P_ * H_.transpose() * S.inverse();
 

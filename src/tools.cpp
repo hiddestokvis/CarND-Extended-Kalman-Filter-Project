@@ -14,32 +14,32 @@ Tools::~Tools() {}
 VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
                               const vector<VectorXd> &ground_truth) {
   // Declare RMSE vector and set to (0,0,0,0)
-  VectorXd RMSE(4);
-  RMSE << 0, 0, 0, 0;
+  VectorXd rmse(4);
+  rmse << 0, 0, 0, 0;
 
   // Check if estimations size is above 0 and if
   // the estimations vector is the same size as the
   // ground truth vector
   if (estimations.size() == 0 || estimations.size() != ground_truth.size()) {
     cout << "Invalid estimation or ground truth vector size" << endl;
-    return RMSE;
+    return rmse;
   }
 
+
   // Sum squared residuals
-  VectorXd residual_sum;
   for (int i = 0; i < estimations.size(); i += 1) {
     VectorXd residual = estimations[i] - ground_truth[i];
-    VectorXd residual_squared = residual.array() * residual.array();
-    residual_sum += residual_squared;
+    residual = residual.array() * residual.array();
+    rmse += residual;
   }
 
   // Calculate the mean
-  VectorXd residual_mean = residual_sum / estimations.size();
+  rmse = rmse / estimations.size();
   // Calculate the square root
-  RMSE = residual_mean.array().sqrt();
+  rmse = rmse.array().sqrt();
 
   // Return the RMSE;
-  return RMSE;
+  return rmse;
 }
 
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
@@ -53,7 +53,7 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
   float vy = x_state(3);
 
   // Pre compute set of repeatedly used terms
-  float c1 = pow(px, 2) + pow(py, 2);
+  float c1 = pow(px, 2.0) + pow(py, 2.0);
   float c2 = sqrt(c1);
   float c3 = c1 * c2;
 
