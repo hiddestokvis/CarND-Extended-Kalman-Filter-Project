@@ -27,8 +27,9 @@ void KalmanFilter::Predict() {
 void KalmanFilter::Update(const VectorXd &z) {
   VectorXd z_pred = H_ * x_;
   VectorXd y = z - z_pred;
-  MatrixXd S = H_ * P_ * H_.transpose() + R_;
-  MatrixXd K = P_ * H_.transpose() * S.inverse();
+  MatrixXd Ht = H_.transpose();
+  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd K = P_ * Ht * S.inverse();
 
   // New estimate
   x_ = x_ + (K * y);
@@ -50,8 +51,9 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   VectorXd z_pred(3);
   z_pred << range, bearing, radial_velocity;
   VectorXd y = z - z_pred;
-  MatrixXd S = H_ * P_ * H_.transpose() + R_;
-  MatrixXd K = P_ * H_.transpose() * S.inverse();
+  MatrixXd Ht = H_.transpose();
+  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd K = P_ * Ht * S.inverse();
 
   // New estimate
   x_ = x_ + (K * y);
